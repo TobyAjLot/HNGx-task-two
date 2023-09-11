@@ -123,4 +123,4 @@ The server will start on port 3000 by default
 
 ## UML
 
-- [repository-url/api.drawio](https://github.com/TobyAjLot/HNGx-task-two/blob/master/api.drawio)
+![Class Diagram](https://www.planttext.com/api/plantuml/png/hP51IyGm58JFvbUyOqljOQz1PG-UHH3s_jhCBf4sBSbBGLp_kqcRLHUy29uIPkPblYJx8EmbZeFg1mw1dk73vEXT4RLaZIRhPDqx7g4fYBVkb8I6Jf2df5NrbHgA-ZEU4ijaZVfG2YwEz0A_s1vhITDxiA2QrrvT-kli9CDK1Q6-EDc8iyaZnRgbRVQHXJLDtIlwwxZ1WEzuVTCGI-Bgec2dvMq6tPF1aUCW1nuYr1TeFhBZK4Yj2_3o6-dHkdyXzHYdvI-a2NIRlZktxVcXFAmgwoPUBg7sS2P_z2S0)
