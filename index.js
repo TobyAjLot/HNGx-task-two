@@ -1,9 +1,9 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const Person = require("./models/person");
 const dotenv = require("dotenv");
-const { check, validationResult } = require("express-validator");
+const Person = require("./models/person");
+const Counter = require("./models/counter");
 
 dotenv.config();
 
@@ -21,13 +21,8 @@ mongoose
   })
   .catch((error) => console.log(`${error} did not connect`));
 
-// Input validation middleware
-const validateName = [
-  check("name").isString().withMessage("Name must be a string"),
-];
-
 // To show list of all names present in the Database. P.S: This is for testing purpose
-app.get("/api/names", async (req, res) => {
+app.get("/api/people", async (req, res) => {
   try {
     const people = await Person.find();
     res.json(people);
@@ -36,35 +31,39 @@ app.get("/api/names", async (req, res) => {
   }
 });
 
-// Read a specific person by querying their name
-app.get("/api", async (req, res) => {
+// Read a specific person by querying with their name
+app.get("/api/:user_id", async (req, res) => {
   try {
-    const name = req.query.name;
-    if (typeof name != String) {
-      return res.status(406).json({ error: "Only string values are allowed" });
+    const id = req.params.user_id;
+    const person = await Person.findOne({ id });
+    if (!person) {
+      return res.status(404).json({ error: "Person not found" });
     }
-    const people = await Person.find({
-      name: { $regex: new RegExp(name, "i") },
-    });
-    if (people.length === 0) {
-      return res
-        .status(404)
-        .json({ error: "No persons found with the specified name" });
-    }
-    res.json(people);
+    res.json(person);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // Create a new person
-app.post("/api", validateName, async (req, res) => {
+app.post("/api", async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    const personData = req.body;
+
+    if (typeof personData.name !== "string") {
+      return res.status(400).json({ error: "Name must be a string" });
     }
-    const person = new Person(req.body);
+    const counter = await Counter.findByIdAndUpdate(
+      "personId", // Use a unique ID for the counter document
+      { $inc: { sequence_value: 1 } },
+      { new: true, upsert: true }
+    );
+
+    const person = new Person({
+      id: counter.sequence_value,
+      name: personData.name,
+    });
+
     const savedPerson = await person.save();
     res.status(201).json(savedPerson);
   } catch (error) {
@@ -72,43 +71,37 @@ app.post("/api", validateName, async (req, res) => {
   }
 });
 
-// Find and update person by name
-app.put("/api/:name", validateName, async (req, res) => {
+// Update a person by ID
+app.put("/api/:user_id", async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    const nameToUpdate = req.params.name;
-    const updateData = req.body;
+    const id = req.params.user_id;
+    const updatedPersonData = req.body;
 
+    if (typeof updatedPersonData.name !== "string") {
+      return res.status(400).json({ error: "Name must be a string" });
+    }
     const updatedPerson = await Person.findOneAndUpdate(
-      { name: { $regex: new RegExp(nameToUpdate, "i") } },
-      { $set: updateData },
+      { id },
+      { $set: updatedPersonData },
       { new: true }
     );
-
     if (!updatedPerson) {
       return res.status(404).json({ error: "Person not found" });
     }
-
     res.json(updatedPerson);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Delete a person by name
-app.delete("/api/:name", async (req, res) => {
+// Delete a person by id
+app.delete("/api/:user_id", async (req, res) => {
   try {
-    const nameToDelete = req.params.name;
-
-    const deletedPerson = await Person.findOneAndRemove({ name: nameToDelete });
-
+    const id = req.params.user_id;
+    const deletedPerson = await Person.findOneAndRemove({ id });
     if (!deletedPerson) {
       return res.status(404).json({ error: "Person not found" });
     }
-
     res.json({ message: "Person deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
